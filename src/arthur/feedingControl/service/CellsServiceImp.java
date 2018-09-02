@@ -6,7 +6,10 @@ import java.sql.ResultSet;
 import java.text.ParseException;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -40,8 +43,13 @@ public class CellsServiceImp extends BaseService implements CellsService {
 			
 			for(int i = 0 ; i <list.size() ; i++){
 				HashMap one = list.get(i);
-				String noInApartment = ""+one.get("no_in_apartment");
-				int rankNum = getRankNum(apartmentId, noInApartment); // 天数
+				int haveAnimal = (Integer)one.get("have_animal");
+				int switchI = (Integer)one.get("switch");
+				if(haveAnimal != 1 || switchI !=1){
+					continue;
+				}
+				String cellId = ""+one.get("id");
+				int rankNum = getRankNum(cellId); // 天数
 				one.put("days", rankNum);
 				
 				int scheduleId =  (Integer)one.get("feeding_schedule");
@@ -70,7 +78,6 @@ public class CellsServiceImp extends BaseService implements CellsService {
 				if(offsetCell != 0 ){
 					wfwAS = wfwAS + wfwAS * offsetCell / 100;
 				}
-				
 				one.put("wfwac", wfwAS);// 完全修正之后。
 				int fedPercent = getFedPercent(rankNum, scheduleHour);
 				one.put("fedPercent", fedPercent); // 已饲喂百分比
@@ -87,19 +94,14 @@ public class CellsServiceImp extends BaseService implements CellsService {
 	}
 	
 	@Override
-	public List<HashMap> getCellsEvents(String apartmentId, String noInApartment) {
+	public List<HashMap> getCellsEvents( String cellId) {
 		Connection con = getConnection();
 		if(con== null)return null;
 		PreparedStatement ps=null;
 		ResultSet r = null;
 		try {
 			String sql = "select * from event where 1=1 ";
-			if(apartmentId!=null){
-				sql = sql +" and apartment_id = "+apartmentId;
-			}
-			if(noInApartment !=null ){
-				sql = sql +" and no_in_apartment = "+noInApartment;
-			}
+			sql = sql +" and cell_id = "+cellId;
 			sql = sql +" order by event_no desc ";
 			ps = con.prepareStatement(sql);
 			r = ps.executeQuery();
@@ -114,7 +116,123 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		}
 		return null;
 	}
-private int getFedPercent( int days,List<HashMap> scheduleHour){
+	
+	@Override
+	public HashMap getCellsStatistic(String apartmentId) {
+		List<HashMap> cells = getCells(apartmentId, null);
+		
+		HashMap data = new HashMap();
+		int animalGross = 0; // have animal =1   +1
+		int deliveryGross = 0; // days >0 +1
+		int addGross = 0 ; // offset > 0; +1
+		int minus = 0 ; // offset <0; +1
+		int unableFeed = 0; // switch = 0 ; +1 
+		int weightGross = 0; //  += wfwac
+		int fedGross = 0; // += wfwac* fedPercent;
+		for(int i = 0 ; i< cells.size(); i++){
+			HashMap oneCell = cells.get(i);
+			int haveAnimal = (Integer)oneCell.get("have_animal");
+			int switchI = (Integer)oneCell.get("switch");
+			if(haveAnimal != 1 || switchI !=1){
+				continue;
+			}
+			int have_animal = (Integer)oneCell.get("have_animal");
+			int days = (Integer)oneCell.get("days");
+			int offset = (Integer)oneCell.get("offset");
+			int iSwitch = (Integer) oneCell.get("switch");
+			int wfwac = (Integer) oneCell.get("wfwac");
+			int percent = (Integer)oneCell.get("fedPercent");
+			
+			
+			if(have_animal==1){
+				animalGross++;
+			}
+			if(days > 0 ){
+				deliveryGross ++;
+			}
+			if(offset >0){
+				addGross++;
+			}else if(offset <0){
+				minus++;
+			}
+			if(iSwitch == 0 ){
+				unableFeed ++;
+			}
+			weightGross+= wfwac;
+			fedGross += wfwac * percent /100;
+		}
+		data.put("animalGross", animalGross);
+		data.put("deliveryGross",deliveryGross);
+		data.put("addGross", addGross);
+		data.put("minus", minus);
+		data.put("unableFeed",unableFeed );
+		data.put("weightGross", weightGross);
+		data.put("fedGross", fedGross);
+		return data;
+	}
+	
+	@Override
+	public void initCell(int id) {
+		Connection con = getConnection();
+		if(con== null) {
+			log.error("获取连接失败");
+			return;
+		}
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			String sql = "update cells set  ";
+//			sql += " skip_time = "+ ;
+			sql += " have_animal = 1";
+			sql += ", `switch` = 1";
+			sql += " where id = "+id;
+			log.info("logsql :"+sql );
+			ps = con.prepareStatement(sql);
+			int executeUpdate = ps.executeUpdate();
+			log.info("init count :"+executeUpdate);
+		} catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return ;
+	}
+	@Override
+	public void modifyCell(int id ,int skip_time ,int offset ,int switchh) {
+		Connection con = getConnection();
+		if(con== null) {
+			log.error("获取连接失败");
+			return;
+		}
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			String sql = "update cells set  ";
+			sql += " skip_time = "+skip_time ;
+			sql += ", offset = "+offset ;
+			sql += ", `switch` = "+switchh ;
+			sql += " where id = "+id;
+			log.info("logsql :"+sql );
+			ps = con.prepareStatement(sql);
+			int executeUpdate = ps.executeUpdate();
+			log.info("modify count :"+executeUpdate);
+		} catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return ;
+	}
+	
+	
+	/*
+	 * 已经喂食的比例。当日。百分比。
+	 */
+	private int getFedPercent( int days,List<HashMap> scheduleHour){
 		
 		HashMap hh = null;
 		for(int i = 0 ; i <scheduleHour.size(); i++ ){ // 根据天数 或者 计划中 这天 应该饲喂的总量
@@ -198,9 +316,9 @@ private int getFedPercent( int days,List<HashMap> scheduleHour){
 	 * @return
 	 * @throws ParseException 
 	 */
-	private int getRankNum(String apartmentId ,String noInApartment) {
+	private int getRankNum(String cellId) {
 		
-		List<HashMap> cellsEvents = cs.getCellsEvents(apartmentId, noInApartment);
+		List<HashMap> cellsEvents = getCellsEvents(cellId);
 		for(int i = 0 ; i< cellsEvents.size(); i++){
 			HashMap event = cellsEvents.get(i);
 			int eventNo = (Integer)event.get("event_no");
@@ -266,4 +384,41 @@ private int getFedPercent( int days,List<HashMap> scheduleHour){
 		}
 		else return  null;
 	}
+
+	@Override
+	public void clearCell(int id) {
+		Connection con = getConnection();
+		if(con== null) {
+			log.error("获取连接失败");
+			return;
+		}
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			String sql = "update cells set  ";
+			sql += " skip_time = "+0 ;
+			sql += ", offset = "+0;
+			sql += ", `switch` = "+0;
+			sql += ", have_animal = "+0;
+			sql += " where id = "+id;
+			log.info("logsql :"+sql );
+			ps = con.prepareStatement(sql);
+			int executeUpdate = ps.executeUpdate();
+			
+			String deleteSql = "delete from event where cell_id ="+id;
+			int executeUpdate2 = ps.executeUpdate(deleteSql);
+			
+			log.info("clear cell :"+executeUpdate);
+			log.info("clear event :"+executeUpdate2);
+		} catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return ;
+	}
+
+	
 }

@@ -95,7 +95,7 @@ public abstract class BaseFunction {
 //		} catch (UnsupportedEncodingException e) {
 //			e.printStackTrace();
 //		}
-		return ((StringHelper.isEmpty(value)) ? "" : value);
+		return ((StringHelper.isEmpty(value)) ? null : value);
 	}
 	public String getStrParameter(String fieldName, String defaultValue) {
 		String value = this.request.getParameter(fieldName);

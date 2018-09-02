@@ -1,3 +1,4 @@
+
 package arthur.feedingControl.utils;
 
 import java.text.ParseException;
@@ -6,10 +7,18 @@ import java.util.Calendar;
 import java.util.Date;
 
 public class DateFormat {
-	private static String layout = "yyyy-MM-dd hh:mm";
+	private static String layout = "yyyy-MM-dd HH:mm";
+	private static String shortLayout = "yyyy-MM-dd";
 	private static SimpleDateFormat sdf = new SimpleDateFormat(layout);
+	private static SimpleDateFormat shortSdf = new SimpleDateFormat(shortLayout);
 	public static Date formatDate(String str) throws ParseException{
-		Date parse = sdf.parse(str);
+		Date parse  = null;
+		if(str.length() == 10){
+			parse = shortSdf.parse(str);
+		}else{
+			parse = sdf.parse(str);
+		}
+		
 		return parse;
 	}
 	/**
@@ -27,5 +36,10 @@ public class DateFormat {
 		long timeInMillis = cl.getTimeInMillis();
 		int days = (int) ((timeInMillis - time) / (1000*3600*24))+1;
 		return days;
+	}
+	public static String toString(Date date ){
+		
+		String dateString = sdf.format(date);
+		return dateString;
 	}
 }
