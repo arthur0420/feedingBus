@@ -420,5 +420,27 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		return ;
 	}
 
-	
+	@Override
+	public HashMap getCellLocationById(int id) {
+		Connection con = getConnection();
+		if(con== null)return null;
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			String sql = "select c.no_in_apartment,a.* from cells c left join apartment a on c.apartment_id = a.id  where c.id =  "+id;
+			ps = con.prepareStatement(sql);
+			r = ps.executeQuery();
+			List<HashMap> list = getList(r);
+			HashMap hashMap = list.get(0);
+			return hashMap;
+		} catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return null;
+		
+	}
 }

@@ -30,7 +30,7 @@ public class Config {
 		List<HashMap> list = cs.getConstants();
 		HashMap<String,HashMap> temp = new HashMap<String,HashMap>();
 		for (int i = 0; i < list.size(); i++) {
-			HashMap  one = constants.get(i);
+			HashMap  one = list.get(i);
 			String enname= one.get("enname")+"";
 			temp.put(enname, one);
 		}

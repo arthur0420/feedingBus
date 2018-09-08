@@ -91,7 +91,7 @@ public class EventServiceImp extends BaseService implements EventService {
 		ResultSet r = null;
 		try {
 			if(con == null )return null;
-			String psql = "select cell_id,max(event_no),max(date) from event group by cell_id";
+			String psql = "select cell_id,max(event_no) event_no,max(date) date from event group by cell_id";
 			ps= con.prepareStatement(psql);
 			r = ps.executeQuery();
 			List<HashMap> list = getList(r);

@@ -42,4 +42,10 @@ public class DateFormat {
 		String dateString = sdf.format(date);
 		return dateString;
 	}
+	
+	public static void main(String[] args) {
+		String nowdate = DateFormat.toString(new Date());
+		System.out.println(nowdate);
+	}
+	
 }

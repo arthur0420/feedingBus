@@ -6,4 +6,5 @@ import java.util.Map;
 
 public interface LogService {
 	public List<HashMap> getLogs(int pageIndex,int pageSize,String dateStart,String dateEnd,String level);
+	public void AddLost(String level ,String logText);
 }
