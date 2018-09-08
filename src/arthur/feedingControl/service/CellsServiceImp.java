@@ -14,7 +14,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import arthur.feedingControl.utils.DateFormat;
-import arthur.feedingControl.utils.config;
+import arthur.feedingControl.utils.Config;
 
 public class CellsServiceImp extends BaseService implements CellsService {
 	static Logger log = Logger.getLogger(CellsServiceImp.class);
@@ -329,7 +329,7 @@ public class CellsServiceImp extends BaseService implements CellsService {
 					return minus;
 				}else if(eventNo == 2){
 					int minus = DateFormat.minus(eventDate);
-					HashMap constant = config.getConstant("gestation");
+					HashMap constant = Config.getConstant("gestation");
 					int days = (Integer)constant.get("days");
 					int ct =  minus - days;
 					if(ct>0)ct=0;

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.sun.javafx.collections.MappingChange.Map;
+
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 /**
@@ -24,6 +26,9 @@ public class Result {
 	}
 	public void setData(List<HashMap> data) {
 		this.data = data;
+	}
+	public void setData(HashMap data) {
+		this.data.add(data);
 	}
 	public String toJson(){
 		JSONObject js = new JSONObject();

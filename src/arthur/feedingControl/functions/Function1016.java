@@ -16,7 +16,7 @@ import arthur.feedingControl.service.LogServiceImp;
 /**
  * 
  * @author arthu
- * 关注提醒，日志警告
+ *添加动物
  */
 
 public class Function1016 extends BaseFunction{
