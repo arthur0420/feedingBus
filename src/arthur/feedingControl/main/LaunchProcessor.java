@@ -23,11 +23,10 @@ public class LaunchProcessor extends Thread{
 		first.set(Calendar.MILLISECOND, 0);
 		//-----------------------定时任务的部分
 		Timer t1 = new Timer();// 每天更新config
-		t1.scheduleAtFixedRate(new DailyTask(),first.getTime() , 24*60*60*1000);
+		t1.scheduleAtFixedRate(new DailyTask(),first.getTime() , 24*60*60*1000l);
 		
 		
 		Calendar cal = Calendar.getInstance();
-//		int hour = cal.get(Calendar.HOUR_OF_DAY);
 		int mi = cal.get(Calendar.MINUTE);
 		long delay = 0;
 		delay = (60 - mi)*60 * 1000 ;

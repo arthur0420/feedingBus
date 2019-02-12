@@ -1,49 +1,49 @@
-package arthur.feedingControl.test;
+package arthur.feedingControl.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.TooManyListenersException;
- 
+
+import org.apache.log4j.Logger;
+
+import arthur.feedingControl.device.DeviceControl;
 import gnu.io.CommPortIdentifier;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.SerialPortEvent;
 import gnu.io.SerialPortEventListener;
 import gnu.io.UnsupportedCommOperationException;
- 
-public class SerialPortTest1 implements  SerialPortEventListener {
-	private  String comName = "COM3"; // 配置文件
+
+public class SerialPortHandler implements  SerialPortEventListener{
+	static Logger log = Logger.getLogger(SerialPortHandler.class);
+	private  String comName = null; // 配置文件
 	
     // 检测系统中可用的通讯端口类
-    private CommPortIdentifier portId;
+    private CommPortIdentifier portId =null;
+    
     // 枚举类型
-    private Enumeration<CommPortIdentifier> portList;
- 
+    private Enumeration<CommPortIdentifier> portList =null;
+    
     // RS485串口
-    private SerialPort serialPort;
+    private SerialPort serialPort = null;
     
     // 输入输出流
-    private InputStream inputStream;
-    private OutputStream outputStream;
- 
-    // 保存串口返回信息
+    private InputStream inputStream =null;
+    private OutputStream outputStream =null;
+   
+    private SerialPortHandler() {}
     
-    // 单例创建
-//    private static SerialPortTest1 uniqueInstance = new SerialPortTest1();
-    
-    private SerialPortTest1() {
-	}
-    public static SerialPortTest1 getInstance(String comName) {
-    	SerialPortTest1 uniqueInstance = new SerialPortTest1();
-    	uniqueInstance.init();
-    	return uniqueInstance;
+    public static SerialPortHandler getInstance(String comportname) {
+    	if(comportname == null || comportname.isEmpty())return null;
+    	
+    	SerialPortHandler object = new SerialPortHandler();
+    	object.comName = comportname;
+    	object.init();
+    	return object;
     }
-    // 初始化串口
+ // 初始化串口
     @SuppressWarnings("unchecked")
     public void init() {
         // 获取系统中所有的通讯端口
@@ -55,14 +55,13 @@ public class SerialPortTest1 implements  SerialPortEventListener {
             if (portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
             	
                 // 比较串口名称是否是"COM3"
-//            	System.out.println(portId.getName());
+            	log.info("comport:"+portId.getName());
                 if (comName.equals(portId.getName())) {
-                    System.out.println("找到串口"+comName);
+                    System.out.println("find com"+comName);
                     // 打开串口
                     try {
                         // open:（应用程序名【随意命名】，阻塞时等待的毫秒数）
-                        serialPort = (SerialPort) portId.open(Object.class.getSimpleName(), 2000);
-                        System.out.println("获取到串口对象,"+comName);
+                        serialPort = (SerialPort) portId.open(comName, 2000);
                         //实例化输入流
                         inputStream = serialPort.getInputStream();
                         // 设置串口监听
@@ -87,29 +86,38 @@ public class SerialPortTest1 implements  SerialPortEventListener {
             }
         }
     }
- 
     // 实现接口SerialPortEventListener中的方法 读取从串口中接收的数据
     @Override
     public void serialEvent(SerialPortEvent event) {
         switch (event.getEventType()) {
         case SerialPortEvent.BI: // 通讯中断
+        	log.info("bi");break;
         case SerialPortEvent.OE: // 溢位错误
+        	log.info("oe");break;
         case SerialPortEvent.FE: // 帧错误
+        	log.info("fe");break;
         case SerialPortEvent.PE: // 奇偶校验错误
+        	log.info("pe");break;
         case SerialPortEvent.CD: // 载波检测
+        	log.info("cd");break;
         case SerialPortEvent.CTS: // 清除发送
+        	log.info("cts");break;
         case SerialPortEvent.DSR: // 数据设备准备好
+        	log.info("dsr");break;
         case SerialPortEvent.RI: // 响铃侦测
+        	log.info("ri");break;
         case SerialPortEvent.OUTPUT_BUFFER_EMPTY: // 输出缓冲区已清空
-            break;
+        	log.info("OUTPUT_BUFFER_EMPTY");break;
         case SerialPortEvent.DATA_AVAILABLE: // 有数据到达
+        	log.info("DATA_AVAILABLE");
             readComm();
             break;
         default:
+        	log.info("default event");
             break;
         }
     }
- 
+
     // 读取串口返回信息
     public void readComm() {
     	try {
@@ -131,31 +139,31 @@ public class SerialPortTest1 implements  SerialPortEventListener {
             		test+= byteToHex;
             	}
             }
-            System.out.println("receive data:"+test);
+            byte[] receiveData = new byte[len];
+            System.arraycopy(readBuffer,0,receiveData, 0,len);
+            DeviceControl.notifyThis(receiveData);
+            log.info("receive data:"+test);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
- 
-   
-     
+    
     //向串口发送数据
     public void sendMsg(byte[] data){
         try {
             //实例化输出流
         	if(outputStream == null) 
         		outputStream = serialPort.getOutputStream();
-        } catch (IOException e1) {
-            e1.printStackTrace();
+        } catch (IOException e) {
+            log.error("get outputstream error",e);
         }
         try {
             outputStream.write(data);
         } catch (IOException e) {
             e.printStackTrace();
+            log.error(e);
         }
-        System.out.println("send");
     }
-    
     public  String byteToHex(byte b){  
         String hex = Integer.toHexString(b & 0xFF);  
         if(hex.length() < 2){  
@@ -163,31 +171,4 @@ public class SerialPortTest1 implements  SerialPortEventListener {
         }  
         return hex;  
     }
-  /*  public byte[] hexStringTobytes(String hex) {
-    	char[] charArray = hex.toCharArray();
-    	List<Byte> bytes = new ArrayList();
-    	for(int i= 0 ; i< charArray.length;i++,i++) {
-    		if(charArray[i] == ' ') {
-    			i++;
-    		}
-    		StringBuilder  sb = new StringBuilder();
-    		sb.append(charArray[i]);
-    		sb.append(charArray[i+1]);
-    		String string = sb.toString();
-    		byte one = (byte)Integer.parseInt(string, 16);
-    		
-    	}
-    	
-    	return null;
-    }*/
-    
-    public void run() {
-        init();
-        byte[] data = new byte[] {(byte)0xFF,(byte)0x0A ,(byte)0x01 ,(byte)0x17 ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x0A ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00 ,(byte)0x00,(byte)0x00 ,(byte)0xFF};
-        sendMsg(data);
-    }
-    public static void main(String[] args) {
-		SerialPortTest1 instance = SerialPortTest1.getInstance("COM3");
-//		instance.run();
-	}
 }

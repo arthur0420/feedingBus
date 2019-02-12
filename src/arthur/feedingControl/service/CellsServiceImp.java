@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -310,6 +311,38 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		}
 		return fodder;
 	}
+	private int getWillFeedWeightOnce(int days,List<HashMap> scheduleHour) {
+		
+		HashMap hh = null;
+		for(int i = 0 ; i <scheduleHour.size(); i++ ){ // 根据天数 或者 计划中 这天 应该饲喂的总量
+			HashMap sh= scheduleHour.get(i);
+			int sd = (Integer)sh.get("days");// 当前节点的天数
+			
+			if(i == 0 ){ // 计划里一个节点
+				if(days <=  sd){ // 计划里第一个节点之前
+					hh = sh;
+					break;
+				}
+				continue;
+			}
+			if(i == (scheduleHour.size()-1)){ // 最后一个节点  必然  days 大于最后一个节点的天数
+				hh = sh;
+				break;
+			}
+			//去头去尾之后的节点
+			if(days<=sd){
+				hh = sh;
+				break;
+			}
+		}
+		Calendar cl = Calendar.getInstance();
+		int nowHour = cl.get(Calendar.HOUR_OF_DAY);
+		
+		int hPercent = (Integer)hh.get("h"+nowHour);
+		return hPercent;
+		
+		
+	}
 	/**
 	 * 获取天数
 	 * 根据 受精时间 和 产仔时间来确定天数。
@@ -419,7 +452,7 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		}
 		return ;
 	}
-
+	
 	@Override
 	public HashMap getCellLocationById(int id) {
 		Connection con = getConnection();
@@ -442,5 +475,76 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		}
 		return null;
 		
+	}
+
+	@Override
+	public List<HashMap> toFeed() {
+		Connection con = getConnection();
+		if(con== null)return null;
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			
+			List<Integer > willUpdateSkipTime = new ArrayList();
+			String sql = "select * from cells ";
+			
+			ps = con.prepareStatement(sql);
+			r = ps.executeQuery();
+			List<HashMap> list = getList(r);
+			List<HashMap> rl = new ArrayList();
+			for(int i = 0 ; i <list.size() ; i++){
+				HashMap one = list.get(i);
+				int id = (int)one.get("id");
+				int haveAnimal = (Integer)one.get("have_animal");
+				int switchI = (Integer)one.get("switch");
+				if(haveAnimal != 1 || switchI !=1){
+					continue;
+				}
+				int skipTime = (Integer)one.get("skip_time");
+				String cellId = ""+one.get("id");
+				int rankNum = getRankNum(cellId); // 天数
+				one.put("days", rankNum);
+				
+				int scheduleId =  (Integer)one.get("feeding_schedule");
+				
+				HashMap schedule = getSchedule(scheduleId);
+				List<HashMap> scheduleDay = getScheduleDay(scheduleId);
+				List<HashMap> scheduleHour = getScheduleHour(scheduleId);
+				
+				one.put("schedule_name", schedule.get("name"));// 饲喂计划名称
+				
+				int willFeedWeightOnce = getWillFeedWeightOnce(rankNum, scheduleHour);
+				if(skipTime!=0 && willFeedWeightOnce !=0) { // 跳过次数不等于0，重量不等于0 需要跳过。
+					willUpdateSkipTime.add(id);
+					continue;
+				}
+				if(willFeedWeightOnce == 0)continue; // 等于0 不需要做任何事。
+				int wfwAS = 0; // 根据饲喂计划的offset 修正数量  只存在一个。
+				int offsetRelative = (Integer)schedule.get("offset_relative"); 
+				int offsetAbsolute= (Integer)schedule.get("offset_absolute");
+				if(offsetAbsolute != 0 ){
+					wfwAS = willFeedWeightOnce + offsetAbsolute;
+				}else if(offsetRelative !=0 ){
+					wfwAS = willFeedWeightOnce + offsetRelative * willFeedWeightOnce / 100;  // 值可能会有问题
+				}else{
+					wfwAS = willFeedWeightOnce;
+				}
+				one.put("wfwbc", wfwAS);// 经过 饲喂计划修正 未根据栏位修正
+				int offsetCell = (Integer)one.get("offset");
+				if(offsetCell != 0 ){
+					wfwAS = wfwAS + wfwAS * offsetCell / 100;
+				}
+				one.put("wfwac", wfwAS);// 完全修正之后。
+				rl.add(one);
+			}
+			return rl;
+		}catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return null;
 	}
 }

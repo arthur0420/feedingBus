@@ -11,4 +11,5 @@ public interface CellsService {
 	public void initCell(int id);
 	public void clearCell(int id);
 	public HashMap getCellLocationById(int id);
+	public List<HashMap> toFeed();
 }

@@ -3,12 +3,12 @@
      <default-config> 
         <property name="jdbcUrl">
             <![CDATA[
-                jdbc:mysql://192.168.1.101:3306/fc?useUnicode=true&useServerPrepStmts=true&prepStmtCacheSqlLimit=256&cachePrepStmts=true&prepStmtCacheSize=256&rewriteBatchedStatements=true
+                jdbc:mysql://cdb-jdpqq6x1.gz.tencentcdb.com:10089/fc?useUnicode=true&useServerPrepStmts=true&prepStmtCacheSqlLimit=256&cachePrepStmts=true&prepStmtCacheSize=256&rewriteBatchedStatements=true&useSSL=true
             ]]>
         </property>
         <property name="driverClass">com.mysql.jdbc.Driver</property>
         <property name="user">root</property>
-        <property name="password">rootroot</property> 
+        <property name="password">dbArthur0917</property> 
 　　     当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3
         <property name="acquireIncrement">3</property>
 　　     初始化数据库连接池时连接的数量
