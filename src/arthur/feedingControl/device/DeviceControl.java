@@ -3,14 +3,24 @@ package arthur.feedingControl.device;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 
+import com.sun.jmx.snmp.tasks.TaskServer;
+import com.sun.org.apache.bcel.internal.generic.INEG;
 import com.sun.xml.internal.ws.wsdl.writer.document.Port;
 
+import arthur.feedingControl.entity.Task;
 import arthur.feedingControl.service.BaseService;
+import arthur.feedingControl.service.CellsService;
+import arthur.feedingControl.service.CellsServiceImp;
+import arthur.feedingControl.service.LogService;
+import arthur.feedingControl.service.LogServiceImp;
 import arthur.feedingControl.utils.Config;
 import arthur.feedingControl.utils.SerialPortHandler;
 import sun.print.resources.serviceui;
@@ -29,7 +39,7 @@ public class DeviceControl extends BaseService{
 	private byte[] receiveData = null;
 	public  static  void notifyThis(byte[] receiveData) {
 		synchronized (lock) {
-			receiveData = null;
+			single.receiveData = receiveData;
 			lock.notifyAll();
 		}
 	}
@@ -70,7 +80,7 @@ public class DeviceControl extends BaseService{
 			String ip = (String)hashMap.get("ip"); // ip
 			String sp = (String)hashMap.get("sp");  //串口号 1,2
 			String rs = (String)hashMap.get("rs"); 	// 串口地址码 1-10
-			String s = (String)hashMap.get("switch");// 开关码 1-10
+			String s = (String)hashMap.get("switch");// 开关码 1-10  sql别名
 			
 			if(ip.equals("127.0.0.1")) {
 				int spint = Integer.parseInt(sp);
@@ -92,16 +102,15 @@ public class DeviceControl extends BaseService{
 				data[3+sint*2] = (byte)60;
 				SerialPortHandler sph = serialPorts[spint-1];
 				sph.sendMsg(data);
-				
 				synchronized (lock) {
 					lock.wait();
 				}
 			}else {
 				//TODO  to other 
 			}
-			
 			return ;
 		} catch (Exception e) {
+			e.printStackTrace();
 			log.error(e);
 		}finally{
 			try { if(r!=null)r.close();} catch (Exception e2) {}
@@ -110,7 +119,150 @@ public class DeviceControl extends BaseService{
 		}
 		return ;
 	}
-	public void sendBatchTask() {
+	public void sendBatchTask(List<HashMap> feed) {
+		String minstr = Config.getBcConfig("min");
+		String maxstr = Config.getBcConfig("max");
+		int min = Integer.parseInt(minstr);
+		int max = Integer.parseInt(maxstr);
 		
+		HashMap calibration = Config.getConstant("calibration");
+		int speed = (int)calibration.get("days"); // 每分钟的下料多少克。
+		double perSecond = speed/60.0; // 每秒
+		HashMap<String,Task> keyMap = new HashMap(); 
+		for(int i = 0 ; i<feed.size();i++) {  // 先把每一台电机控制板的数据组装好。
+			HashMap hashMap = feed.get(i);
+			int wfwAS =  (int)hashMap.get("wfwac");
+			String ip = (String)hashMap.get("ip"); // ip
+			String sp = (String)hashMap.get("sp");  //串口号 1,2
+			String rs = (String)hashMap.get("rs"); 	// 串口地址码 1-10
+			String s = (String)hashMap.get("ds");// 开关码 1-10
+			int spint = Integer.parseInt(sp);
+			int rsint = Integer.parseInt(rs);
+			int sint = Integer.parseInt(s);
+			
+			String key = ip+sp+rs; // 一台电机控制板
+			int willRunSeconds = (int) (wfwAS / perSecond) ;
+			byte h =(byte)(willRunSeconds>> 8 &0xff );
+			byte l =(byte)(willRunSeconds &0xff);
+			Task task = null;
+			if(keyMap.containsKey(key)) {
+				task = keyMap.get(key);
+			}else {
+				task = new Task();
+				keyMap.put(key, task);
+				task.ip = ip;
+				task.sp = spint;
+				task.rs = rsint;
+				byte[] data = new byte[] {(byte)0xFF,(byte)rsint ,(byte)0x01 ,(byte)0x17 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0x00,(byte)0x00 ,
+						(byte)0xFF};
+				HashMap[] celldata = new HashMap[10];
+				task.data = data;
+				task.celldata = celldata;
+			}
+			
+			byte[] data  = task.data;
+			HashMap[] celldata = task.celldata;
+			int hi = 3+sint*2 -1;
+			int li = 3+sint*2;
+			data[hi] = h;
+			data[li] = l;
+			celldata[sint-1] = hashMap;
+		}
+		HashMap<String, List<Task>> ipList = new HashMap();
+		Iterator<Task> iterator = keyMap.values().iterator();
+		while(iterator.hasNext()) { // 根据ip  分组。
+			Task next = iterator.next();
+			String ip = next.ip;
+			if(ipList.containsKey(ip)) {
+				List<Task> list = ipList.get(ip);
+				list.add(next);
+			}else {
+				List<Task>  list = new ArrayList();
+				list.add(next);
+				ipList.put(ip, list);
+			}
+		}
+		
+		Iterator<Entry<String, List<Task>>> iterator2 = ipList.entrySet().iterator();
+		while(iterator2.hasNext()) {
+			Entry<String, List<Task>> next = iterator2.next();
+			List<Task> value = next.getValue();
+			String targetIp = next.getKey();
+			if(targetIp.equals("127.0.0.1")) {
+				for(int i = 0 ; i<  value.size();i++) { //  本机下  有多少个task要发送。  挨个发送。
+					Task t = value.get(i);
+					SerialPortHandler sph = serialPorts[t.sp-1];
+					sph.sendMsg(t.data);
+					for(int m = 0 ; m< t.data.length ;m++) {
+						System.out.print(sph.byteToHex(t.data[m])+" ");
+					}
+					synchronized (lock) {
+						try {
+							lock.wait();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					} 		//	 4  5  6  7
+					//ff000117   00 0a 00 00 00000000000000000000000000000000ff
+					for(int j = 0 ; j<10;j++) {
+						int mv = (receiveData[4+j*2]&0xff) << 8 | (receiveData[5+j*2]&0xff) ;
+						if(t.data[j] == 0)continue;
+						if(mv<min) {
+							error(t.celldata[j],'l');
+						}else if( mv > max) {
+							error(t.celldata[j],'h');
+						}
+					}
+				}
+			}else {
+				//TODO  to other 
+			}
+		}
+	}
+	private void error(HashMap cells,char hl) {
+		if(cells == null)return ;
+		String no_in_apartment =  cells.get("no_in_apartment")+"";
+		String pl_name = cells.get("pl_name")+"";
+		String ap_name = cells.get("ap_name")+"";
+		LogService ls = new LogServiceImp();
+		String logtext = pl_name+"-"+ap_name+"-"+no_in_apartment+"栏位喂食错误：";
+		if(hl == 'h') {
+			logtext +="堵转";
+		}else {
+			logtext +="空转或断路";
+		}
+		ls.AddLost("error",logtext );
+	}
+	public static void main(String[] args) {
+		Config.initConfig();
+		CellsService cs = new CellsServiceImp();
+		List<HashMap> feed = cs.toFeed();
+		DeviceControl instance = DeviceControl.getInstance();
+		/*int i = 0 ; 
+		while(instance == null) {
+			i++;
+			if(i == 10) {
+				log.error("getinsatance timeout");
+				return;
+			}
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			instance = DeviceControl.getInstance();
+		}*/
+		instance.sendBatchTask(feed);
+		DeviceControl.close();
 	}
 }

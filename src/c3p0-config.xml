@@ -9,14 +9,18 @@
         <property name="driverClass">com.mysql.jdbc.Driver</property>
         <property name="user">root</property>
         <property name="password">dbArthur0917</property> 
-　　     当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3
+　　    <!--  当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3 -->
         <property name="acquireIncrement">3</property>
-　　     初始化数据库连接池时连接的数量
+　　    <!-- 初始化数据库连接池时连接的数量 --> 
         <property name="initialPoolSize">3</property>
-        数据库连接池中的最小的数据库连接数
+        <!-- 数据库连接池中的最小的数据库连接数 -->
         <property name="minPoolSize">2</property>
-        数据库连接池中的最大的数据库连接数
+        <!-- 数据库连接池中的最大的数据库连接数 -->
         <property name="maxPoolSize">20</property>
+        <property name="maxIdleTime">600</property>
+
+         <!-- 测试 链接有效性     没有配置测试方法，默认是   DatabaseMetaData.getTables()  -->
+        <property name="idleConnectionTestPeriod">60</property>
     </default-config> 
     
     <!--  <default-config> 

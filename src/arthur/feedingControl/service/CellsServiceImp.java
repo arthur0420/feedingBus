@@ -484,9 +484,10 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		PreparedStatement ps=null;
 		ResultSet r = null;
 		try {
-			
 			List<Integer > willUpdateSkipTime = new ArrayList();
-			String sql = "select * from cells ";
+			String sql = " select c.*,d.ip,d.sp,d.rs,d.switch ds,a.pl_name,a.ap_name from cells c "
+					+ " left join device d  on c.deviceid = d.id "
+					+ " left join apartment a on a.id = c.apartment_id";
 			
 			ps = con.prepareStatement(sql);
 			r = ps.executeQuery();
@@ -513,7 +514,11 @@ public class CellsServiceImp extends BaseService implements CellsService {
 				
 				one.put("schedule_name", schedule.get("name"));// 饲喂计划名称
 				
-				int willFeedWeightOnce = getWillFeedWeightOnce(rankNum, scheduleHour);
+				int willFeedWeightOnce = getWillFeedWeight(rankNum, scheduleDay);  // 当日喂食重量
+				int percentDay = getWillFeedWeightOnce(rankNum, scheduleHour);// 当前时间，喂食比例 当日比例
+				
+				
+				
 				if(skipTime!=0 && willFeedWeightOnce !=0) { // 跳过次数不等于0，重量不等于0 需要跳过。
 					willUpdateSkipTime.add(id);
 					continue;
@@ -534,17 +539,40 @@ public class CellsServiceImp extends BaseService implements CellsService {
 				if(offsetCell != 0 ){
 					wfwAS = wfwAS + wfwAS * offsetCell / 100;
 				}
+				wfwAS = wfwAS * percentDay ;  // 不除以 100， 现在单位是g
 				one.put("wfwac", wfwAS);// 完全修正之后。
 				rl.add(one);
 			}
+			r.close();
+			ps.close();
+			r = null;
+			String updateSql = "update cells set skip_time = skip_time -1 where id = ? and skip_time !=0 and skip_time is not null";
+			ps = con.prepareStatement(updateSql);
+			int size = willUpdateSkipTime.size();
+			for(int i = 0 ;i<size ;i++) {
+				int one = willUpdateSkipTime.get(i);
+				ps.setInt(1, one);
+				ps.addBatch();
+				if(i% 10 == 0  || i ==(size-1)  ) { // 逢10或最后一条
+					ps.executeBatch();
+				}
+			}
 			return rl;
 		}catch (Exception e) {
-			log.error(e);
+			log.error("---",e);
 		}finally{
 			try { if(r!=null)r.close();} catch (Exception e2) {}
 			try { if(ps!=null)ps.close();} catch (Exception e2) {}
 			try { if(con!=null)con.close();} catch (Exception e2) {}
 		}
 		return null;
+	}
+	public static void main(String[] args) {
+		Config.initConfig();
+		CellsService cs = new CellsServiceImp();
+		List<HashMap> feed = cs.toFeed();
+		
+		System.out.println(feed);
+		
 	}
 }

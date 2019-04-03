@@ -36,7 +36,7 @@ public class BaseService {
 		while(rs.next()){
 			HashMap row = new HashMap();
 			for (int i = 1; i <= columnCount; i++) {
-				String key= metaData.getColumnName(i);
+				String key= metaData.getColumnLabel(i);
 				int columnType = metaData.getColumnType(i);
 				switch(columnType){
 					case Types.VARCHAR :

@@ -59,7 +59,7 @@ public class LogServiceImp extends BaseService implements LogService {
 		ResultSet r = null;
 		try {
 			if(con == null )return ;
-			String sql = "insert into log(level,remark,date) valus(?,?,?)";
+			String sql = "insert into log(level,remark,date) VALUES(?,?,?)";
 			ps= con.prepareStatement(sql);
 			ps.setString(1, level);
 			ps.setString(2, logText);

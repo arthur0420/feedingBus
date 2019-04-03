@@ -47,9 +47,7 @@ public class Config {
 		}
 	}
 	public static String getBcConfig(String key) {
-		String property = bcConfig.getProperty(key);
+		String property = bcConfig.getProperty(key)+"";
 		return property;
 	}
-	
-	
 }

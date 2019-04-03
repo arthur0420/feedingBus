@@ -36,6 +36,7 @@ public class EnterServlet extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 //		System.out.println("one request");
+		response.setHeader("Access-Control-Allow-Origin", "*");
 		RequestProcessor.process(request, response);
 	}
 
