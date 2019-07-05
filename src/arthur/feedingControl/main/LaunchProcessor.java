@@ -11,6 +11,8 @@ import org.apache.log4j.Logger;
 import arthur.feedingControl.device.DeviceControl;
 import arthur.feedingControl.service.CellsService;
 import arthur.feedingControl.service.CellsServiceImp;
+import arthur.feedingControl.service.LogService;
+import arthur.feedingControl.service.LogServiceImp;
 import arthur.feedingControl.utils.Config;
 import arthur.feedingControl.utils.DailyTask;
 
@@ -44,6 +46,10 @@ public class LaunchProcessor extends Thread{
 			public void run() {
 				CellsService cs = new CellsServiceImp();
 				List<HashMap> feed = cs.toFeed();
+				
+				LogService ls = new LogServiceImp();
+				ls.addRecord(feed);
+				
 				DeviceControl instance = DeviceControl.getInstance();
 				int i = 0 ; 
 				while(instance == null) {

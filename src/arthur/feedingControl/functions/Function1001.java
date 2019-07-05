@@ -22,11 +22,13 @@ public class Function1001 extends BaseFunction{
 		int pageSize = getIntParameter("pageSize",10);
 		LogService ls = new LogServiceImp();
 		List<HashMap> logs =(ArrayList<HashMap>)ls.getLogs(pageIndex, pageSize, null, null, null);
+		int logCount = ls.getLogCount();
 		
 		Result result = new Result();
 		result.setError_info("成功");
 		result.setError_no("0");
 		result.setData(logs);
+		result.setString("total",logCount+"");
 		return result;
 	}
 }

@@ -38,6 +38,28 @@ public class ScheduleServiceImp extends BaseService implements ScheduleService {
 		}
 		return null;
 	}
+	@Override
+	public List<HashMap> getScheduleList() {
+		
+		Connection con= getConnection();
+		if(con== null)return null;
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			String sqlSchedule = "select * from schedule ";
+			ps = con.prepareStatement(sqlSchedule);
+			r = ps.executeQuery();
+			List<HashMap> list = getList(r);
+			return list;
+		} catch (Exception e) {
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return null;
+	}
 	
 	@Override
 	public List<HashMap> getScheduleDay(int scheduleId) {

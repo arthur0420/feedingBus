@@ -16,8 +16,7 @@ import net.sf.json.JSONObject;
 public class Result {
 	String error_no=""; //0成功 -1失败
 	String error_info="";// 错误信息
-	List<HashMap> data = new ArrayList<HashMap>();
-	
+	private JSONObject js = new JSONObject();
 	public void setError_no(String error_no) {
 		this.error_no = error_no;
 	}
@@ -25,18 +24,27 @@ public class Result {
 		this.error_info = error_info;
 	}
 	public void setData(List<HashMap> data) {
-		this.data = data;
+		setData("data", data);
 	}
 	public void setData(HashMap data) {
-		this.data.add(data);
+		setData("data", data);
 	}
-	public String toJson(){
-		JSONObject js = new JSONObject();
-		js.put("error_no", error_no);
-		js.put("error_info", error_info);
+	public void setData(String key,List data) {
 		JSONArray jsond = new JSONArray();
 		jsond.addAll(data);
-		js.put("data",jsond);
+		js.put(key,jsond);
+	}
+	public void setData(String key,HashMap data) {
+		JSONArray jsond = new JSONArray();
+		jsond.add(data);
+		js.put(key,jsond);
+	}
+	public void setString(String key,String value) {
+		js.put(key,value);
+	}
+	public String toJson(){
+		js.put("error_no", error_no);
+		js.put("error_info", error_info);
 		return js.toString();
 	}
 	/*public static void main(String[] args) {

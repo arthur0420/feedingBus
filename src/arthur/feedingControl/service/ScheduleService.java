@@ -6,6 +6,7 @@ import java.util.List;
 import net.sf.json.JSONArray;
 
 public interface ScheduleService {
+	public List<HashMap> getScheduleList();
 	public List<HashMap> getSchedule(int scheduleId);
 	public List<HashMap> getScheduleDay(int scheduleId);
 	public List<HashMap> getScheduleHour(int scheduleId);

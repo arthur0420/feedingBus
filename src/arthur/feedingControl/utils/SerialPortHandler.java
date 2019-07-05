@@ -163,12 +163,28 @@ public class SerialPortHandler implements  SerialPortEventListener{
             e.printStackTrace();
             log.error(e);
         }
+        try{
+        	String test = "";
+        	for(int i =0 ;i <data.length;i++ ) {
+        		Byte one = data[i];
+        		String byteToHex = byteToHex(one);
+        		test+= byteToHex;
+        		log.info("send data:"+test);
+        	}
+        }catch(Exception e){
+        }
     }
-    public  String byteToHex(byte b){  
+    public  static String byteToHex(byte b){  
         String hex = Integer.toHexString(b & 0xFF);  
         if(hex.length() < 2){  
             hex = "0" + hex;  
         }  
         return hex;  
     }
+    public static void main(String[] args) {
+		int a = 255;
+		byte b = (byte)a;
+		String byteToHex = byteToHex(b);
+		System.out.println(byteToHex);
+	}
 }

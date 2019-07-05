@@ -119,6 +119,66 @@ public class DeviceControl extends BaseService{
 		}
 		return ;
 	}
+	
+	public  void sendSingleTask(String[] devices,byte time) {
+		Connection con = getConnection();
+		if(con== null)return ;
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		
+		try {
+			byte[] data = new byte[] {(byte)0xFF,(byte)0x01 ,(byte)0x01 ,(byte)0x17 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0x00,(byte)0x00 ,
+					(byte)0xFF};
+			
+			for(int i = 0 ; i<devices.length ;i++){
+				String portId =devices[i];
+				if(portId == null || "".equals(portId)) continue;
+				String sql = "select * from device where id = ?";
+				ps = con.prepareStatement(sql);
+				ps.setString(1, portId);
+				r = ps.executeQuery();
+				List<HashMap> list = getList(r);
+				if(list.size() == 0)continue;
+				HashMap hashMap = list.get(0);
+				String ip = (String)hashMap.get("ip"); // ip
+				String sp = (String)hashMap.get("sp");  //串口号 1,2
+				String rs = (String)hashMap.get("rs"); 	// 串口地址码 1-10
+				String s = (String)hashMap.get("switch");// 开关码 1-10  sql别名
+				
+				int spint = Integer.parseInt(sp);
+				int rsint = Integer.parseInt(rs);
+				int sint = Integer.parseInt(s);
+				
+//				data[1] = (byte)rsint;
+				data[3+sint*2] = (byte)time;
+			}
+			
+			SerialPortHandler sph = serialPorts[0];
+			sph.sendMsg(data);
+			synchronized (lock) {
+				lock.wait();
+			}
+			return ;
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.error(e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+		return ;
+	}
 	public void sendBatchTask(List<HashMap> feed) {
 		String minstr = Config.getBcConfig("min");
 		String maxstr = Config.getBcConfig("max");

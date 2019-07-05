@@ -22,7 +22,8 @@ import arthur.feedingControl.service.LogServiceImp;
 public class Function1002 extends BaseFunction{
 	@Override
 	public Result execute() {
-		String dataType  = getStrParameter("dataType"); // 4dictionary , detail.
+//		String dataType  = getStrParameter("dataType"); // 4dictionary , detail.
+		String dataType  =  "detail";
 		ApartmentService as = new ApartmentServiceImp();
 		List<HashMap> apartments = as.getApartments();
 		if(dataType!=null && dataType.equals("detail")){

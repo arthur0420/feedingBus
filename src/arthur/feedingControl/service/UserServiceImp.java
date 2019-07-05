@@ -173,5 +173,8 @@ public class UserServiceImp extends BaseService implements UserService  {
 		}
 		return ;
 	}
-	
+	public static void main(String[] args) {
+		String md5psw = ConvertHelper.md5("admin", "admin");
+		System.out.println(md5psw);
+	}
 }

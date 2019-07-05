@@ -45,6 +45,9 @@ public class BaseService {
 					case Types.INTEGER :
 						row.put(key,rs.getInt(key));
 						break;
+					case Types.BIGINT:
+						row.put(key,rs.getLong(key));
+						break;
 				}
 			}
 			list.add(row);
