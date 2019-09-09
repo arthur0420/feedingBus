@@ -8,4 +8,6 @@ public interface EventService {
 	public void addEvent(HashMap param);
 	public List<HashMap> getGroupMax();
 	
+	public void clearEvent(int id);
+	
 }

@@ -105,5 +105,25 @@ public class EventServiceImp extends BaseService implements EventService {
 			try { if(con!=null)con.close();} catch (Exception e2) {}
 		}
 	}
+
+	@Override
+	public void clearEvent(int id) {
+		Connection con = getConnection();
+		PreparedStatement ps=null;
+		ResultSet r = null;
+		try {
+			if(con == null )return ;
+			String psql = "delete from event where cell_id = ?";
+			ps= con.prepareStatement(psql);
+			ps.setInt(1, id);
+			ps.executeUpdate();
+		} catch (Exception e) {
+			log.error("error",e);
+		}finally{
+			try { if(r!=null)r.close();} catch (Exception e2) {}
+			try { if(ps!=null)ps.close();} catch (Exception e2) {}
+			try { if(con!=null)con.close();} catch (Exception e2) {}
+		}
+	}
 	
 }

@@ -22,6 +22,7 @@ public class DailyTask extends TimerTask {
 		//-特别关注。   验孕提醒,断奶，产仔提醒，喂食速度
 //		String[] attentions = {"pregnancy_test","weaning_attention","farrow_attentiong"};
 		
+		List<HashMap> ptlist = new ArrayList<HashMap>();
 		
 		EventService es = new EventServiceImp();
 		List<HashMap> groupMax = es.getGroupMax();
@@ -31,7 +32,6 @@ public class DailyTask extends TimerTask {
 		HashMap ptc = Config.getConstant("pregnancy_test");
 		int ptdays = (Integer )ptc.get("days");
 		String ptsw = ptc.get("switch")+"";
-		List<HashMap> ptlist = new ArrayList<HashMap>();
 		
 		
 		
@@ -43,7 +43,6 @@ public class DailyTask extends TimerTask {
 		int wdays = (Integer)wc.get("days");  // 产仔之后多少天预计断奶。
 		int waLastEventDays = wdays - wadays;
 		List<HashMap> walist = new ArrayList<HashMap>();
-		
 		
 		
 		

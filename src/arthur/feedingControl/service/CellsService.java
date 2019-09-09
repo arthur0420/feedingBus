@@ -8,7 +8,7 @@ public interface CellsService {
 	public List<HashMap> getCellsEvents(String cellId);
 	public HashMap getCellsStatistic(String apartmentId);
 	public void modifyCell(int id ,int skip_time ,int offset ,int switchh);
-	public void initCell(int id);
+	public void initCell(int id,String scheduleId);
 	public void clearCell(int id);
 	public HashMap getCellLocationById(int id);
 	public List<HashMap> toFeed();

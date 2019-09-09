@@ -173,7 +173,7 @@ public class CellsServiceImp extends BaseService implements CellsService {
 	}
 	
 	@Override
-	public void initCell(int id) {
+	public void initCell(int id,String scheduleId) {
 		Connection con = getConnection();
 		if(con== null) {
 			log.error("获取连接失败");
@@ -186,6 +186,7 @@ public class CellsServiceImp extends BaseService implements CellsService {
 //			sql += " skip_time = "+ ;
 			sql += " have_animal = 1";
 			sql += ", `switch` = 1";
+			sql += ", feeding_schedule = "+scheduleId;
 			sql += " where id = "+id;
 			log.info("logsql :"+sql );
 			ps = con.prepareStatement(sql);

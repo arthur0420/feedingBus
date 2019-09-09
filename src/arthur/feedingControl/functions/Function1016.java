@@ -26,7 +26,7 @@ public class Function1016 extends BaseFunction{
 		String apId = getStrParameter("apId");
 		String no = getStrParameter("no");
 		String eventDate = getStrParameter("eventDate");
-		
+		String scheduleId=  getStrParameter("scheduleId");
 		CellsService cs = new CellsServiceImp();
 		List<HashMap> cells = cs.getCells(apId, no);
 		if(cells.size() == 0){
@@ -42,14 +42,14 @@ public class Function1016 extends BaseFunction{
 			return result;
 		}
 		int id = (int) hashMap.get("id");
-		cs.initCell(id);
+		cs.initCell(id,scheduleId);
 		
 		EventService es = new EventServiceImp();
 		HashMap param = new HashMap();
 		param.put("cell_id", id);
 		param.put("event_no", "2");
 		param.put("date", eventDate);
-		
+		es.clearEvent(id);
 		es.addEvent(param);
 		
 		
