@@ -85,7 +85,7 @@ public class CellsServiceImp extends BaseService implements CellsService {
 			}
 			return list;
 		} catch (Exception e) {
-			log.error(e);
+			log.error("",e);
 		}finally{
 			try { if(r!=null)r.close();} catch (Exception e2) {}
 			try { if(ps!=null)ps.close();} catch (Exception e2) {}
@@ -183,7 +183,8 @@ public class CellsServiceImp extends BaseService implements CellsService {
 		ResultSet r = null;
 		try {
 			String sql = "update cells set  ";
-//			sql += " skip_time = "+ ;
+			sql += " offset = 0" ;
+			sql += " skip_time = 0" ;
 			sql += " have_animal = 1";
 			sql += ", `switch` = 1";
 			sql += ", feeding_schedule = "+scheduleId;
