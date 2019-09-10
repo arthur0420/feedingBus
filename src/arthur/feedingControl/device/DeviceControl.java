@@ -297,26 +297,4 @@ public class DeviceControl extends BaseService{
 		}
 		ls.AddLost("error",logtext );
 	}
-	public static void main(String[] args) {
-		Config.initConfig();
-		CellsService cs = new CellsServiceImp();
-		List<HashMap> feed = cs.toFeed();
-		DeviceControl instance = DeviceControl.getInstance();
-		/*int i = 0 ; 
-		while(instance == null) {
-			i++;
-			if(i == 10) {
-				log.error("getinsatance timeout");
-				return;
-			}
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			instance = DeviceControl.getInstance();
-		}*/
-		instance.sendBatchTask(feed);
-		DeviceControl.close();
-	}
 }
