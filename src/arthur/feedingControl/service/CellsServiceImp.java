@@ -517,14 +517,13 @@ public class CellsServiceImp extends BaseService implements CellsService {
 				
 				int willFeedWeightOnce = getWillFeedWeight(rankNum, scheduleDay);  // 当日喂食重量
 				int percentDay = getWillFeedWeightOnce(rankNum, scheduleHour);// 当前时间，喂食比例 当日比例
-				
-				
-				
-				if(skipTime!=0 && willFeedWeightOnce !=0) { // 跳过次数不等于0，重量不等于0 需要跳过。
+				if(skipTime!=0 && willFeedWeightOnce !=0 && percentDay !=0  ) { // 跳过次数不等于0  需要跳过。  且有东西 需要喂。
 					willUpdateSkipTime.add(id);
 					continue;
 				}
-				if(willFeedWeightOnce == 0)continue; // 等于0 不需要做任何事。
+				if(willFeedWeightOnce == 0 || percentDay == 0 )continue; // 不需要喂
+				
+				
 				int wfwAS = 0; // 根据饲喂计划的offset 修正数量  只存在一个。
 				int offsetRelative = (Integer)schedule.get("offset_relative"); 
 				int offsetAbsolute= (Integer)schedule.get("offset_absolute");
@@ -567,13 +566,5 @@ public class CellsServiceImp extends BaseService implements CellsService {
 			try { if(con!=null)con.close();} catch (Exception e2) {}
 		}
 		return null;
-	}
-	public static void main(String[] args) {
-		Config.initConfig();
-		CellsService cs = new CellsServiceImp();
-		List<HashMap> feed = cs.toFeed();
-		
-		System.out.println(feed);
-		
 	}
 }
