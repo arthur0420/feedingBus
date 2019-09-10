@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Enumeration;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TooManyListenersException;
 
 import org.apache.log4j.Logger;
 
 import arthur.feedingControl.device.DeviceControl;
+import arthur.feedingControl.service.LogService;
+import arthur.feedingControl.service.LogServiceImp;
 import gnu.io.CommPortIdentifier;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
@@ -33,6 +37,9 @@ public class SerialPortHandler implements  SerialPortEventListener{
     private InputStream inputStream =null;
     private OutputStream outputStream =null;
    
+    private Timer aft = null;
+    private byte[] aftCacheData = null;
+    
     private SerialPortHandler() {}
     
     public static SerialPortHandler getInstance(String comportname) {
@@ -120,6 +127,7 @@ public class SerialPortHandler implements  SerialPortEventListener{
 
     // 读取串口返回信息
     public void readComm() {
+    	changeWaitFlag(null);
     	try {
 			Thread.sleep(100);
 			// 等待数据完全到达。
@@ -148,7 +156,32 @@ public class SerialPortHandler implements  SerialPortEventListener{
         }
     }
     
+    private void changeWaitFlag(byte[] data) { // 必须成对出现     sendMsg和readcomm 
+    	aftCacheData = data;
+    	if(aft !=null) { // 清空
+    		aft.cancel();
+    		aft = null;
+    	}else {
+    		aft = new Timer();
+    		aft.schedule(new TimerTask() { // 3秒后如果没有回复，就是回复超时。
+				@Override
+				public void run() {
+					//某一台设备响应超时。
+					aft = null;
+					deviceTimeOutError();
+					DeviceControl.notifyThis(null);
+				}
+			}, 3000); 
+    	}
+    }
+    private void deviceTimeOutError() {
+    	LogService ls = new LogServiceImp();
+    	String rsaddr = byteToHex(aftCacheData[1]);
+		String logtext = portId.getName()+","+rsaddr+",电机控制板响应超时，请联系技术人员。";
+		ls.AddLost("error",logtext );
+    }
     //向串口发送数据
+    // 所有的串口消息都会等等回复。
     public void sendMsg(byte[] data){
         try {
             //实例化输出流
@@ -163,14 +196,15 @@ public class SerialPortHandler implements  SerialPortEventListener{
             e.printStackTrace();
             log.error(e);
         }
+        changeWaitFlag(data);
         try{
         	String test = "";
         	for(int i =0 ;i <data.length;i++ ) {
         		Byte one = data[i];
         		String byteToHex = byteToHex(one);
         		test+= byteToHex;
-        		log.info("send data:"+test);
         	}
+        	log.info("send data:"+test);
         }catch(Exception e){
         }
     }

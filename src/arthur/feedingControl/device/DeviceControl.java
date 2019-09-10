@@ -35,10 +35,10 @@ public class DeviceControl extends BaseService{
 	private static Logger log = Logger.getLogger(DeviceControl.class);
 	private static SerialPortHandler[] serialPorts = new SerialPortHandler[2]; // 串口对象
 	private static DeviceControl single = null;
-	private static Object lock = new Object();
+	private static Object lock = new Object(); // 也是锁对象，也是wait对象。
 	private byte[] receiveData = null;
 	public  static  void notifyThis(byte[] receiveData) {
-		synchronized (lock) {
+		synchronized (lock){
 			single.receiveData = receiveData;
 			lock.notifyAll();
 		}
@@ -65,6 +65,7 @@ public class DeviceControl extends BaseService{
 		}
 	}
 	
+	// 测试 测速用。
 	public  void sendSingleTask(String portId,int time) {
 		Connection con = getConnection();
 		if(con== null)return ;
@@ -119,7 +120,8 @@ public class DeviceControl extends BaseService{
 		}
 		return ;
 	}
-	
+	// 连通性测试专用，多设备。
+	// 默认  ip为本机  串口号为1， 地址码为1。多设备是开关号。
 	public  void sendSingleTask(String[] devices,byte time) {
 		Connection con = getConnection();
 		if(con== null)return ;
@@ -150,19 +152,12 @@ public class DeviceControl extends BaseService{
 				List<HashMap> list = getList(r);
 				if(list.size() == 0)continue;
 				HashMap hashMap = list.get(0);
-				String ip = (String)hashMap.get("ip"); // ip
-				String sp = (String)hashMap.get("sp");  //串口号 1,2
-				String rs = (String)hashMap.get("rs"); 	// 串口地址码 1-10
 				String s = (String)hashMap.get("switch");// 开关码 1-10  sql别名
 				
-				int spint = Integer.parseInt(sp);
-				int rsint = Integer.parseInt(rs);
 				int sint = Integer.parseInt(s);
-				
 //				data[1] = (byte)rsint;
 				data[3+sint*2] = (byte)time;
 			}
-			
 			SerialPortHandler sph = serialPorts[0];
 			sph.sendMsg(data);
 			synchronized (lock) {
@@ -179,6 +174,7 @@ public class DeviceControl extends BaseService{
 		}
 		return ;
 	}
+	//批量任务，正常系统执行用。
 	public void sendBatchTask(List<HashMap> feed) {
 		String minstr = Config.getBcConfig("min");
 		String maxstr = Config.getBcConfig("max");
@@ -263,17 +259,14 @@ public class DeviceControl extends BaseService{
 					Task t = value.get(i);
 					SerialPortHandler sph = serialPorts[t.sp-1];
 					sph.sendMsg(t.data);
-					for(int m = 0 ; m< t.data.length ;m++) {
-						System.out.print(sph.byteToHex(t.data[m])+" ");
-					}
 					synchronized (lock) {
 						try {
 							lock.wait();
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-					} 		//	 4  5  6  7
-					//ff000117   00 0a 00 00 00000000000000000000000000000000ff
+					}
+					if(receiveData==null) continue;
 					for(int j = 0 ; j<10;j++) {
 						int mv = (receiveData[4+j*2]&0xff) << 8 | (receiveData[5+j*2]&0xff) ;
 						if(t.data[j] == 0)continue;
@@ -285,10 +278,11 @@ public class DeviceControl extends BaseService{
 					}
 				}
 			}else {
-				//TODO  to other 
+				//TODO  to other 非本机的代码还没有写
 			}
 		}
 	}
+	
 	private void error(HashMap cells,char hl) {
 		if(cells == null)return ;
 		String no_in_apartment =  cells.get("no_in_apartment")+"";
