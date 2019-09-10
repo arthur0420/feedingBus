@@ -369,12 +369,13 @@ public class CellsServiceImp extends BaseService implements CellsService {
 					int ct =  minus - days;
 					if(ct>0)ct=0;
 					return ct;
+				}else{
+					log.error("没有受精事件，没有分娩事件。不能确定天数");
 				}
 			} catch (Exception e) {
-				log.error("",e);
+				log.error(e);
 			}
 		}
-		log.error("没有受精事件，没有分娩事件。不能确定天数");
 		return 0;
 	}
 	
