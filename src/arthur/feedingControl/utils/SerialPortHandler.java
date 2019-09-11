@@ -64,7 +64,7 @@ public class SerialPortHandler implements  SerialPortEventListener{
                 // 比较串口名称是否是"COM3"
             	log.info("comport:"+portId.getName());
                 if (comName.equals(portId.getName())) {
-                    System.out.println("find com"+comName);
+                    log.info("find com"+comName);
                     // 打开串口
                     try {
                         // open:（应用程序名【随意命名】，阻塞时等待的毫秒数）
@@ -89,6 +89,7 @@ public class SerialPortHandler implements  SerialPortEventListener{
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+                    break;
                 }
             }
         }
@@ -177,7 +178,7 @@ public class SerialPortHandler implements  SerialPortEventListener{
     private void deviceTimeOutError() {
     	LogService ls = new LogServiceImp();
     	String rsaddr = byteToHex(aftCacheData[1]);
-		String logtext = portId.getName()+","+rsaddr+",电机控制板响应超时，请联系技术人员。";
+		String logtext = comName+","+rsaddr+",电机控制板响应超时，请联系技术人员。";
 		ls.AddLost("error",logtext );
     }
     //向串口发送数据
